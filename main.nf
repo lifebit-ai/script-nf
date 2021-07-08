@@ -13,6 +13,7 @@ log.info "queueSize\t\t : ${params.queueSize}"
 log.info "executor\t\t : ${params.executor}"
 if(params.gpu_mode) log.info "accelerator\t\t : ${params.accelerator}"
 if(params.gpu_mode) log.info "n_accelerators\t : ${params.n_accelerators}"
+if(params.config == 'conf/awsbatch.config') log.info "aws_batch_process_queue : ${params.aws_batch_process_queue}"
 if(params.config == 'conf/google.config') log.info "gls_bootDiskSize : ${params.gls_bootDiskSize}"
 if(params.config == 'conf/google.config') log.info "gls_preemptible : ${params.gls_preemptible}"
 if(params.config == 'conf/google.config') log.info "zone\t\t\t : ${params.zone}"
@@ -52,54 +53,3 @@ if (!params.pbrun_mode) {
         }
      }
   }
-
-if (params.gpu_mode) {
-
-ch_reps = Channel.from(1..params.reps)
-
-    process gpu_mode {
-        tag "cpus: ${task.cpus},mem: ${task.memory} | rep: ${rep}, ${task.container}"
-        label (params.gpu_mode ? 'with_gpus': 'with_cpus')
-        publishDir "${params.outdir}/gpu_mode/task_${rep}/", mode: "copy"
-
-        input:
-        val(rep) from ch_reps
-
-        output:
-        file("*") optional true
-
-        script:
-        """
-        cat .command.run > command.run
-        echo "executor : ${params.executor}"
-        echo "rep: ${rep}"
-        ${params.script}
-        """
-    }
-}
-
-
-if (params.pbrun_mode) {
-
-ch_reps = Channel.from(1..params.reps)
-
-    process pbrun_mode {
-        tag "cpus: ${task.cpus},mem: ${task.memory} | rep: ${rep}"
-        label 'pbrun'
-        publishDir "${params.outdir}/pbrun/task_${rep}/", mode: "copy"
-
-        input:
-        val(rep) from ch_reps
-
-        output:
-        file("*") optional true
-
-        script:
-        """
-        cat .command.run > command.run
-        echo "executor : ${params.executor}"
-        echo "rep: ${rep}"
-        ${params.script}
-        """
-    }
-}
